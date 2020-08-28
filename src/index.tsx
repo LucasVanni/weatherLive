@@ -1,25 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, StyleSheet, ActivityIndicator, StatusBar, Text, Platform,
+  View, ActivityIndicator, StatusBar, Text,
 } from 'react-native';
-// import DatePicker from 'react-native-date-picker';
 import MapView, { PROVIDER_GOOGLE, Marker, Callout } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import api from './services';
 
-const styles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#7159c1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});
+import getTemperature from './functions/getTemperature';
 
-export default () => {
+import styles from './styles';
+
+const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [coordinates, setCoordinates] = useState({ latitude: -22.5, longitude: -48.71 });
   const [latitude, setLatitude] = useState(0);
@@ -30,14 +21,12 @@ export default () => {
     Geolocation.getCurrentPosition(({ coords }) => {
       setCoordinates(coords);
 
+      getTemperature({ latitude, longitude }).then((temp) => {
+        setTemperature(temp);
+      });
+      setLoading(false);
       setLatitude(coords.latitude);
       setLongitude(coords.longitude);
-
-      api.get(`onecall?lat=${latitude}&lon=${longitude}&units=metric&appid=51a72be711c3639bf03cefb8e080dadd`).then((response) => {
-        const { data: { current: { temp } } } = response;
-        setTemperature(temp);
-        setLoading(false);
-      });
     }, (error) => { console.log(error); },
     { enableHighAccuracy: false });
   }, [latitude, longitude]);
@@ -67,26 +56,36 @@ export default () => {
           }}
           style={styles.map}
         >
-          <>
-            <Marker
-              pinColor="#7159c1"
-              identifier="OriginMarker"
-              coordinate={{
-                latitude,
-                longitude,
+          <Marker
+            pinColor="#7159c1"
+            identifier="OriginMarker"
+            coordinate={{
+              latitude,
+              longitude,
+            }}
+          >
+            <Callout
+              onPress={async () => {
+                const temp = await getTemperature({
+                  latitude, longitude,
+                });
+
+                setTemperature(temp);
               }}
             >
-              <Callout>
+              <>
                 <Text>
                   {temperature}
                   ºC
                 </Text>
-              </Callout>
-            </Marker>
-
-          </>
+                <Text>Toque aqui para atualizar</Text>
+              </>
+            </Callout>
+          </Marker>
         </MapView>
       )}
     </View>
   );
 };
+
+export default App;
