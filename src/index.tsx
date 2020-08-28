@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, StyleSheet, ActivityIndicator, StatusBar, Text,
+  View, StyleSheet, ActivityIndicator, StatusBar, Text, Platform,
 } from 'react-native';
 // import DatePicker from 'react-native-date-picker';
 import MapView, { PROVIDER_GOOGLE, Marker, Callout } from 'react-native-maps';
@@ -38,7 +38,8 @@ export default () => {
         setTemperature(temp);
         setLoading(false);
       });
-    });
+    }, (error) => { console.log(error); },
+    { enableHighAccuracy: false });
   }, [latitude, longitude]);
 
   return (
@@ -58,8 +59,12 @@ export default () => {
           onUserLocationChange={(position) => {
             setLatitude(position.nativeEvent.coordinate.latitude);
             setLongitude(position.nativeEvent.coordinate.longitude);
+            api.get(`onecall?lat=${position.nativeEvent.coordinate.latitude}&lon=${position.nativeEvent.coordinate.longitude}&units=metric&appid=51a72be711c3639bf03cefb8e080dadd`)
+              .then((response) => {
+                const { data: { current: { temp } } } = response;
+                setTemperature(temp);
+              });
           }}
-          followsUserLocation
           style={styles.map}
         >
           <>
@@ -74,6 +79,7 @@ export default () => {
               <Callout>
                 <Text>
                   {temperature}
+                  ºC
                 </Text>
               </Callout>
             </Marker>
